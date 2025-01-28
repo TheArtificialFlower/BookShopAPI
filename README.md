@@ -51,7 +51,3 @@ A simple Django-based API designed for managing books, orders, user profiles, an
 - **JWT Authentication**: Secure user authentication.
 - **OpenAPI (Swagger)**: API documentation and schema generation.
 
-## Setup
-1. Clone the repository:
-   ```bash
-   git clone git@github.com:YourUsername/YourRepository.git
