@@ -8,7 +8,6 @@ class Category(models.Model):
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=20, unique=True)
 
-
     class Meta:
         ordering = ("name",)
         verbose_name = "category"
@@ -40,11 +39,18 @@ class BookRating(models.Model):
 
 
 class Order(models.Model):
+    CHOICES = (
+        ('pending', 'PENDING'),
+        ('delivered', 'DELIVERED'),
+        ('cancelled', 'CANCELLED')
+    )
+
     user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE, related_name="orders")
     paid = models.BooleanField(default=False)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     coupon = models.IntegerField(null=True, blank=True, default=None)
+    status = models.CharField(max_length=100, choices=CHOICES, default='pending')
 
     class Meta:
         ordering = ("paid", "-updated")

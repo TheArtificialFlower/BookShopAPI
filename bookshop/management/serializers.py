@@ -33,6 +33,8 @@ class OrderItemsSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     items = serializers.SerializerMethodField()
     total = serializers.SerializerMethodField()
+    user = serializers.StringRelatedField()
+
     class Meta:
         model = Order
         fields = "__all__"

@@ -20,6 +20,43 @@ class BookManagementView(RetrieveUpdateDestroyAPIView):
     serializer_class = BookSerializer
 
 
+class OrderManagementView(ListAPIView):
+    """
+    API view for managing orders.
+
+    This view allows administrators to retrieve a list of all orders. It supports filtering orders
+    by a user's full name and ordering the results based on a specified field.
+
+    Query Parameters:
+    - search (str, optional): Filters orders by matching the user's full name (case-insensitive).
+    - order-by (str, optional): Orders the results by the specified field.
+
+    Permissions:
+    - Only accessible to admin users.
+
+    Returns:
+    - A paginated list of orders serialized using OrderSerializer.
+    """
+    queryset = Order.objects.all()
+    permission_classes = (IsAdminUser,)
+    serializer_class = OrderSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        search_keyword = self.request.GET.get("search")
+        order_keyword = self.request.GET.get("order-by")
+        if search_keyword:
+            queryset = queryset.filter(user__full_name__icontains=search_keyword)
+        if order_keyword and order_keyword in [field.name for field in Order._meta.get_fields()]:
+            queryset = queryset.order_by(order_keyword)
+        return queryset
+
+
+class OrderUpdateManagementView(RetrieveUpdateDestroyAPIView):
+    queryset = Order.objects.all()
+    permission_classes = (IsAdminUser,)
+    serializer_class = OrderSerializer
+
 
 class BookCreateView(CreateAPIView):
     model = Book
@@ -28,21 +65,24 @@ class BookCreateView(CreateAPIView):
     serializer_class = BookSerializer
 
 
-
 class BookListView(ListAPIView):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
     pagination_class = PageNumberPagination
 
-    # Checks if user asked for a category
+    # Checks if user asked for a category OR search keyword
     def get_queryset(self):
         queryset = super().get_queryset()
         category_slug = self.kwargs.get('category_slug', None)
+        search_keyword = self.request.GET.get("search")
         if category_slug:
             category = get_object_or_404(Category, slug=category_slug)
             queryset = Book.objects.filter(category=category)
-        return queryset
 
+        if search_keyword:
+            queryset = queryset.filter(title__contains=search_keyword)
+
+        return queryset
 
 
 class BookDetailsView(RetrieveAPIView):
@@ -71,7 +111,6 @@ class BookDetailsView(RetrieveAPIView):
         book = self.get_object()
         cart = cart_add(request, book)
         return Response(data=cart.data, status=status.HTTP_201_CREATED)
-
 
 
 class CartView(APIView):
@@ -123,7 +162,6 @@ class CartView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-
 class OrderView(RetrieveUpdateDestroyAPIView):
     """
     OrderView provides API endpoints for retrieving, updating, and deleting a user's order.
@@ -136,7 +174,7 @@ class OrderView(RetrieveUpdateDestroyAPIView):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user)
+        return Order.objects.select_related("user").filter(user=self.request.user)
 
 
     def retrieve(self, request, *args, **kwargs):
